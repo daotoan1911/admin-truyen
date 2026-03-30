@@ -448,10 +448,9 @@
         loadStories();
 
         // ===== USERS =====
-        // Admin gọi API về user app (port 3000 local / Vercel URL production)
         const USER_API = window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : 'https://web-truyen-online.vercel.app'; // <-- đổi thành URL user app thật
+            : 'https://web-truyen-online-5l2b88ovk-daotoan1911s-projects.vercel.app';
 
         let allUsers = [], selectedUserId = null;
 
