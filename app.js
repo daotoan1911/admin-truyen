@@ -15,6 +15,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/stories', require('./routers/storyRoutes'));
 app.use('/chapters', require('./routers/chapterRoutes'));
 app.use('/ads', require('./routers/adRoutes'));
+app.use('/users', require('./routers/userRoutes'));
 
 app.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, 'public/admin.html'));
