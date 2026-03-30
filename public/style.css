@@ -5,10 +5,14 @@
 }
 
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: #0f0f1a;
     color: #e0e0e0;
     min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 header {
@@ -574,4 +578,95 @@ form textarea {
         left: 10px;
         text-align: center;
     }
+}
+
+/* ===== TYPOGRAPHY SCALE ===== */
+.logo {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.tab-btn {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+}
+
+.list-title {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.list-count {
+    font-size: 0.8125rem;
+}
+
+.item-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.item-sub {
+    font-size: 0.8125rem;
+    color: #666;
+}
+
+.btn-edit,
+.btn-delete {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.btn-secondary {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.empty {
+    font-size: 0.9375rem;
+}
+
+.vip-badge {
+    font-size: 0.6875rem;
+    font-weight: 800;
+}
+
+.ad-slot-label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.ad-slot-key {
+    font-size: 0.75rem;
+}
+
+form label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+form input,
+form textarea,
+form select {
+    font-size: 0.9375rem;
+}
+
+#searchInput {
+    font-size: 0.9375rem;
+}
+
+#toast {
+    font-size: 0.875rem;
 }

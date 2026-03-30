@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - WebTruyenChu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -16,6 +18,7 @@
                 <button class="tab-btn active" onclick="showTab('stories', this)">📚 Truyện</button>
                 <button class="tab-btn" onclick="showTab('chapters', this)">📄 Chương</button>
                 <button class="tab-btn" onclick="showTab('ads', this)">📢 Quảng cáo</button>
+                <button class="tab-btn" onclick="showTab('users', this)">👥 Users</button>
             </div>
         </nav>
     </header>
@@ -39,6 +42,11 @@
                     <textarea id="description" rows="3" placeholder="Mô tả ngắn..."></textarea>
                     <label>Ảnh bìa (URL)</label>
                     <input type="text" id="cover" placeholder="https://...">
+                    <img id="coverPreview" src=""
+                        style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:4px"
+                        onerror="this.style.display='none'">
+                    <button type="button" class="btn-secondary" onclick="openUpload('cover')" style="margin-top:-4px">📁
+                        Chọn ảnh từ máy</button>
                     <label class="checkbox-label"><input type="checkbox" id="isVIP"> Truyện VIP</label>
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="storySubmitBtn">➕ Thêm truyện</button>
@@ -111,12 +119,80 @@
         </div>
     </div>
 
+    <!-- TAB USERS -->
+    <div id="tab-users" class="tab-content" style="display:none">
+        <div style="max-width:1000px;margin:28px auto;padding:0 20px">
+            <div class="list-panel">
+                <div class="list-header">
+                    <span class="list-title">👥 Danh sách người dùng</span>
+                    <span class="list-count" id="userCount"></span>
+                </div>
+                <input type="text" id="userSearch" placeholder="🔍 Tìm theo tên hoặc email..." oninput="searchUsers()"
+                    style="width:100%;padding:9px 14px;background:#0f0f1a;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:14px;outline:none;margin-bottom:14px">
+                <ul class="item-list" id="userList">
+                    <li class="empty">Đang tải...</li>
+                </ul>
+            </div>
+
+            <!-- User detail modal -->
+            <div id="userDetail" style="display:none;margin-top:20px">
+                <div class="panel">
+                    <div class="panel-title">👤 <span id="detailName"></span>
+                        <button onclick="document.getElementById('userDetail').style.display='none'"
+                            style="margin-left:auto;background:none;border:none;color:#666;cursor:pointer;font-size:18px">✕</button>
+                    </div>
+                    <div id="detailBody" style="display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+                    <div
+                        style="margin-top:16px;padding-top:16px;border-top:1px solid #2a2a40;display:flex;gap:10px;flex-wrap:wrap">
+                        <button class="btn-edit" onclick="toggleVIP()" id="vipToggleBtn">...</button>
+                        <button class="btn-delete" onclick="deleteUser()" id="deleteUserBtn">🗑️ Xoá tài khoản</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     <script>
         // ===== CẤU HÌNH API URL =====
         // Khi deploy Vercel: đổi thành URL user app của bạn
         const API = window.location.hostname === 'localhost'
             ? 'http://localhost:5000'
             : '';
+
+        // ===== CLOUDINARY CONFIG =====
+        const CLOUD_NAME = 'daqly7n2o';
+        const UPLOAD_PRESET = 'geyy2hav';
+
+        function openUpload(targetInputId) {
+            const widget = cloudinary.createUploadWidget(
+                {
+                    cloudName: CLOUD_NAME,
+                    uploadPreset: UPLOAD_PRESET,
+                    sources: ['local', 'url', 'camera'],
+                    multiple: false,
+                    maxFileSize: 2000000, // 2MB
+                    cropping: false,
+                    language: 'vi',
+                    text: { vi: { or: 'Hoặc', menu: { files: 'Từ máy tính', url: 'Từ URL', camera: 'Camera' } } }
+                },
+                (error, result) => {
+                    if (!error && result.event === 'success') {
+                        document.getElementById(targetInputId).value = result.info.secure_url;
+                        // Trigger preview nếu là ad slot
+                        const slot = targetInputId.replace('img-', '');
+                        if (targetInputId.startsWith('img-')) previewImg(slot, result.info.secure_url);
+                        // Trigger preview cho cover truyện
+                        if (targetInputId === 'cover') {
+                            document.getElementById('coverPreview').src = result.info.secure_url;
+                            document.getElementById('coverPreview').style.display = 'block';
+                        }
+                        widget.close();
+                    }
+                }
+            );
+            widget.open();
+        }
 
         let allStories = [];
 
@@ -133,6 +209,7 @@
             btn.classList.add('active');
             if (name === 'chapters') populateStorySelect();
             if (name === 'ads') loadAds();
+            if (name === 'users') loadUsers();
         }
 
         // ===== STORIES =====
@@ -192,6 +269,8 @@
             document.getElementById('genre').value = s.genre || '';
             document.getElementById('description').value = s.description || '';
             document.getElementById('cover').value = s.cover || '';
+            document.getElementById('coverPreview').src = s.cover || '';
+            document.getElementById('coverPreview').style.display = s.cover ? 'block' : 'none';
             document.getElementById('isVIP').checked = s.isVIP;
             document.getElementById('storyFormTitle').textContent = 'Sửa truyện';
             document.getElementById('storySubmitBtn').textContent = '💾 Cập nhật';
@@ -327,7 +406,10 @@
           <label>Link URL</label>
           <input type="text" id="url-${s.slot}" value="${a.url || ''}" placeholder="https://...">
           <label>Ảnh banner (URL${isFloat ? ' — nên dùng ảnh vuông ~200x200' : ''})</label>
-          <input type="text" id="img-${s.slot}" value="${a.imageUrl || ''}" placeholder="https://..." oninput="previewImg('${s.slot}', this.value)">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="img-${s.slot}" value="${a.imageUrl || ''}" placeholder="https://..." oninput="previewImg('${s.slot}', this.value)" style="flex:1">
+            <button type="button" onclick="openUpload('img-${s.slot}')" style="padding:8px 12px;background:#2a2a40;color:#ccc;border:1px solid #333;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:12px" title="Chọn ảnh từ máy">📁</button>
+          </div>
           <div class="ad-slot-footer">
             <label class="checkbox-label">
               <input type="checkbox" id="active-${s.slot}" ${a.isActive !== false ? 'checked' : ''}> Hiển thị
@@ -364,6 +446,114 @@
         }
 
         loadStories();
+
+        // ===== USERS =====
+        // Admin gọi API về user app (port 3000 local / Vercel URL production)
+        const USER_API = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
+            : 'https://web-truyen-online.vercel.app'; // <-- đổi thành URL user app thật
+
+        let allUsers = [], selectedUserId = null;
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${USER_API}/users/all`);
+                if (!res.ok) { document.getElementById('userList').innerHTML = '<li class="empty">Không thể tải danh sách user. Kiểm tra USER_API.</li>'; return; }
+                allUsers = await res.json();
+                renderUsers(allUsers);
+            } catch (e) {
+                document.getElementById('userList').innerHTML = `<li class="empty">Lỗi: ${e.message}</li>`;
+            }
+        }
+
+        function renderUsers(users) {
+            document.getElementById('userCount').textContent = users.length + ' người dùng';
+            document.getElementById('userList').innerHTML = users.length
+                ? users.map(u => `<li onclick="showUserDetail('${u._id}')" style="cursor:pointer">
+                    <div class="item-info">
+                        <div class="item-title">
+                            ${u.username}
+                            ${u.isVIP ? '<span class="vip-badge">👑 VIP</span>' : ''}
+                            ${!u.isVerified ? '<span style="font-size:10px;color:#666;background:#1e1e30;padding:2px 6px;border-radius:4px">Chưa xác nhận</span>' : ''}
+                        </div>
+                        <div class="item-sub">${u.email} · Số dư: ${(u.balance || 0).toLocaleString('vi-VN')}đ · ${new Date(u.createdAt).toLocaleDateString('vi-VN')}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="event.stopPropagation();showUserDetail('${u._id}')">Chi tiết</button>
+                    </div>
+                </li>`).join('')
+                : '<li class="empty">Chưa có user nào.</li>';
+        }
+
+        function searchUsers() {
+            const q = document.getElementById('userSearch').value.toLowerCase();
+            renderUsers(allUsers.filter(u => u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+        }
+
+        async function showUserDetail(id) {
+            selectedUserId = id;
+            const u = allUsers.find(u => u._id === id);
+            if (!u) return;
+            document.getElementById('userDetail').style.display = 'block';
+            document.getElementById('detailName').textContent = u.username;
+            const expiry = u.vipExpiry ? new Date(u.vipExpiry).toLocaleDateString('vi-VN') : 'Không có';
+            document.getElementById('detailBody').innerHTML = `
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">Email</div>
+                    <div style="color:#e0e0e0">${u.email}</div>
+                </div>
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">Trạng thái</div>
+                    <div>${u.isVerified ? '<span style="color:#4caf50">✅ Đã xác nhận</span>' : '<span style="color:#e94560">❌ Chưa xác nhận</span>'}</div>
+                </div>
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">Số dư ví</div>
+                    <div style="color:#ffd200;font-weight:700">${(u.balance || 0).toLocaleString('vi-VN')} VNĐ</div>
+                </div>
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">VIP</div>
+                    <div>${u.isVIP ? `<span style="color:#ffd200">👑 VIP đến ${expiry}</span>` : '<span style="color:#555">Chưa VIP</span>'}</div>
+                </div>
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">Lịch sử đọc</div>
+                    <div style="color:#e0e0e0">${(u.history || []).length} chương</div>
+                </div>
+                <div style="background:#0f0f1a;border-radius:8px;padding:14px">
+                    <div style="font-size:12px;color:#666;margin-bottom:4px">Ngày đăng ký</div>
+                    <div style="color:#e0e0e0">${new Date(u.createdAt).toLocaleDateString('vi-VN')}</div>
+                </div>`;
+            document.getElementById('vipToggleBtn').textContent = u.isVIP ? '❌ Thu hồi VIP' : '👑 Cấp VIP';
+            document.getElementById('vipToggleBtn').style.background = u.isVIP ? '#3a1e1e' : '#1e3a2f';
+            document.getElementById('vipToggleBtn').style.color = u.isVIP ? '#e94560' : '#4caf50';
+            document.getElementById('vipToggleBtn').style.borderColor = u.isVIP ? '#e94560' : '#4caf50';
+            document.getElementById('userDetail').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function toggleVIP() {
+            if (!selectedUserId) return;
+            const u = allUsers.find(u => u._id === selectedUserId);
+            const action = u.isVIP ? 'revoke' : 'grant';
+            const res = await fetch(`${USER_API}/users/${selectedUserId}/admin-vip`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            if (!res.ok) { toast('❌ ' + await res.text()); return; }
+            toast(action === 'grant' ? '👑 Đã cấp VIP' : '❌ Đã thu hồi VIP', 'success');
+            await loadUsers();
+            showUserDetail(selectedUserId);
+        }
+
+        async function deleteUser() {
+            if (!selectedUserId) return;
+            const u = allUsers.find(u => u._id === selectedUserId);
+            if (!confirm(`Xoá tài khoản "${u.username}"? Không thể hoàn tác.`)) return;
+            const res = await fetch(`${USER_API}/users/${selectedUserId}`, { method: 'DELETE' });
+            if (!res.ok) { toast('❌ ' + await res.text()); return; }
+            toast('🗑️ Đã xoá tài khoản');
+            document.getElementById('userDetail').style.display = 'none';
+            loadUsers();
+        }
     </script>
 </body>
 
