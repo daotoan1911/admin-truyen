@@ -293,12 +293,13 @@
 
         // ===== ADS =====
         const AD_SLOTS = [
-            { slot: 'banner_top', label: 'Banner đầu trang' },
-            { slot: 'banner_bottom', label: 'Banner cuối trang' },
-            { slot: 'sidebar', label: 'Sidebar / giữa trang (chapter)' },
-            { slot: 'shopee', label: 'Shopee Affiliate' },
-            { slot: 'custom_1', label: 'Quảng cáo tuỳ chỉnh 1' },
-            { slot: 'custom_2', label: 'Quảng cáo tuỳ chỉnh 2' },
+            { slot: 'banner_top', label: '📌 Banner đầu trang (index)' },
+            { slot: 'banner_bottom', label: '📌 Banner cuối trang (index)' },
+            { slot: 'sidebar', label: '📌 Sidebar giữa trang (chapter)' },
+            { slot: 'shopee', label: '🛒 Shopee Affiliate (footer)' },
+            { slot: 'float_ad', label: '💫 Float Ad (icon góc phải - tất cả trang)' },
+            { slot: 'custom_1', label: '🔧 Quảng cáo tuỳ chỉnh 1' },
+            { slot: 'custom_2', label: '🔧 Quảng cáo tuỳ chỉnh 2' },
         ];
 
         async function loadAds() {
@@ -310,19 +311,23 @@
             document.getElementById('adSlotList').innerHTML = AD_SLOTS.map(s => {
                 const a = map[s.slot] || {};
                 const hasUrl = !!(a.url && a.url.trim());
-                return `<div class="ad-slot-card">
+                const hasImg = !!(a.imageUrl && a.imageUrl.trim());
+                const isFloat = s.slot === 'float_ad';
+                return `<div class="ad-slot-card ${isFloat ? 'float-slot' : ''}">
           <div class="ad-slot-header">
             <span class="ad-slot-label">${s.label}</span>
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:11px;color:${hasUrl ? '#4caf50' : '#555'}">${hasUrl ? '● Đang có link' : '● Chưa có link'}</span>
+              <span style="font-size:11px;color:${hasUrl ? '#4caf50' : '#555'}">${hasUrl ? '● Có link' : '● Chưa có link'}</span>
               <code class="ad-slot-key">${s.slot}</code>
             </div>
           </div>
-          ${hasUrl ? `<div style="font-size:12px;color:#e94560;word-break:break-all;padding:4px 0 8px">🔗 ${a.url}</div>` : ''}
+          ${isFloat ? `<p style="font-size:12px;color:#888;margin-bottom:4px">Icon nhỏ động góc phải màn hình. Click icon → mở banner popup + link. Nên dùng ảnh vuông.</p>` : ''}
+          ${hasUrl ? `<div style="font-size:12px;color:#e94560;word-break:break-all;padding:2px 0 6px">🔗 ${a.url}</div>` : ''}
+          ${hasImg ? `<img src="${a.imageUrl}" style="width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-bottom:4px" onerror="this.style.display='none'">` : ''}
           <label>Link URL</label>
           <input type="text" id="url-${s.slot}" value="${a.url || ''}" placeholder="https://...">
-          <label>Ảnh banner (URL, tuỳ chọn)</label>
-          <input type="text" id="img-${s.slot}" value="${a.imageUrl || ''}" placeholder="https://...">
+          <label>Ảnh banner (URL${isFloat ? ' — nên dùng ảnh vuông ~200x200' : ''})</label>
+          <input type="text" id="img-${s.slot}" value="${a.imageUrl || ''}" placeholder="https://..." oninput="previewImg('${s.slot}', this.value)">
           <div class="ad-slot-footer">
             <label class="checkbox-label">
               <input type="checkbox" id="active-${s.slot}" ${a.isActive !== false ? 'checked' : ''}> Hiển thị
@@ -331,6 +336,25 @@
           </div>
         </div>`;
             }).join('');
+        }
+
+        function previewImg(slot, url) {
+            // Preview ảnh ngay khi nhập URL (debounce nhẹ)
+            clearTimeout(window._previewTimer);
+            window._previewTimer = setTimeout(() => {
+                const card = document.getElementById('img-' + slot)?.closest('.ad-slot-card');
+                if (!card) return;
+                let preview = card.querySelector('.img-preview');
+                if (!url) { if (preview) preview.remove(); return; }
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.className = 'img-preview';
+                    preview.style.cssText = 'width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-top:4px';
+                    preview.onerror = () => preview.remove();
+                    document.getElementById('img-' + slot).after(preview);
+                }
+                preview.src = url;
+            }, 600);
         }
 
         async function saveAd(slot, label) {
