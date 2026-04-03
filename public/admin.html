@@ -593,39 +593,39 @@
             status.textContent = '';
 
             try {
-                // Chia nhỏ thành đoạn 500 ký tự để tránh giới hạn API
-                const chunks = [];
                 const lines = content.split('\n');
+                const chunks = [];
                 let current = '';
+
                 for (const line of lines) {
-                    if ((current + line).length > 450) {
+                    if ((current + '\n' + line).length > 1000) {
                         if (current) chunks.push(current.trim());
-                        current = line + '\n';
+                        current = line;
                     } else {
-                        current += line + '\n';
+                        current += (current ? '\n' : '') + line;
                     }
                 }
                 if (current.trim()) chunks.push(current.trim());
 
-                status.textContent = `Đang dịch... 0/${chunks.length} đoạn`;
                 const translated = [];
-
                 for (let i = 0; i < chunks.length; i++) {
-                    const res = await fetch(
-                        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunks[i])}&langpair=zh|vi`
-                    );
-                    const data = await res.json();
-                    translated.push(data.responseData?.translatedText || chunks[i]);
                     status.textContent = `Đang dịch... ${i + 1}/${chunks.length} đoạn`;
-                    // Delay nhỏ tránh rate limit
-                    if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 300));
+                    const res = await fetch(`${API}/translate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: chunks[i] })
+                    });
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error);
+                    translated.push(data.translated);
+                    if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 200));
                 }
 
                 document.getElementById('chapterContent').value = translated.join('\n');
                 status.textContent = `✅ Dịch xong ${chunks.length} đoạn`;
                 toast('✅ Dịch hoàn tất!', 'success');
             } catch (e) {
-                status.textContent = '❌ Lỗi dịch: ' + e.message;
+                status.textContent = '❌ Lỗi: ' + e.message;
                 toast('❌ Lỗi khi dịch');
             }
 
