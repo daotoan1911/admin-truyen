@@ -17,6 +17,7 @@ app.use('/chapters', require('./routers/chapterRoutes'));
 app.use('/ads', require('./routers/adRoutes'));
 app.use('/users', require('./routers/userRoutes'));
 app.use('/translate', require('./routers/translateRoutes'));
+app.use('/crawl', require('./routers/crawlRoutes'));
 
 app.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, 'public/admin.html'));

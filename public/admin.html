@@ -84,6 +84,12 @@
                     <label>Tiêu đề chương *</label>
                     <input type="text" id="chapterTitle" placeholder="Tiêu đề..." required>
                     <label>Nội dung *</label>
+                    <div style="display:flex;gap:8px;margin-bottom:6px">
+                        <input type="text" id="crawlUrl" placeholder="https://etruyen.net/truyen/.../chuong-1"
+                            style="flex:1;padding:8px 12px;background:#0f0f1a;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:13px;outline:none">
+                        <button type="button" class="btn-secondary" onclick="crawlChapter()" id="crawlBtn"
+                            style="font-size:13px;white-space:nowrap;flex-shrink:0">🔗 Lấy từ URL</button>
+                    </div>
                     <div style="display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap">
                         <label class="btn-secondary"
                             style="cursor:pointer;padding:7px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px">
@@ -97,8 +103,8 @@
                         </button>
                         <span id="translateStatus" style="font-size:12px;color:#888;align-self:center"></span>
                     </div>
-                    <textarea id="chapterContent" rows="10" placeholder="Nội dung chương... (hoặc upload file .txt)"
-                        required></textarea>
+                    <textarea id="chapterContent" rows="10"
+                        placeholder="Nội dung chương... (nhập URL, upload .txt, hoặc nhập tay)" required></textarea>
                     <label class="checkbox-label"><input type="checkbox" id="chapterIsVIP"> Chương VIP</label>
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="chapterSubmitBtn">➕ Thêm chương</button>
@@ -460,6 +466,31 @@
         }
 
         loadStories();
+
+        // ===== CRAWL TỪ URL =====
+        async function crawlChapter() {
+            const url = document.getElementById('crawlUrl').value.trim();
+            if (!url) { toast('⚠️ Nhập URL chương vào ô trên'); return; }
+            const btn = document.getElementById('crawlBtn');
+            btn.disabled = true; btn.textContent = '⏳ Đang lấy...';
+            try {
+                const res = await fetch(`${API}/crawl`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                document.getElementById('chapterContent').value = data.content;
+                if (data.title && !document.getElementById('chapterTitle').value) {
+                    document.getElementById('chapterTitle').value = data.title;
+                }
+                toast('✅ Lấy nội dung thành công!', 'success');
+            } catch (e) {
+                toast('❌ ' + e.message);
+            }
+            btn.disabled = false; btn.textContent = '🔗 Lấy từ URL';
+        }
 
         // ===== UPLOAD TXT & DỊCH =====
         function handleTxtUpload(input) {
